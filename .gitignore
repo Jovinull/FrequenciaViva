@@ -1,0 +1,6 @@
+.godot/
+build/web/
+*.tmp
+*.log
+/.playwright-mcp/
+evidence/*.import

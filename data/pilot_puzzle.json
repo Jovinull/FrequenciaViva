@@ -1,0 +1,14 @@
+{
+  "id": "pilot_01",
+  "frequency_min": 92.0,
+  "frequency_max": 104.0,
+  "frequency_step": 0.1,
+  "starting_frequency": 93.8,
+  "target_frequency": 99.2,
+  "target_radius": 0.56,
+  "false_peak_frequency": 95.4,
+  "false_peak_strength": 0.70,
+  "false_peak_radius": 0.26,
+  "lock_tolerance": 0.10,
+  "message_id": "workshop_bulletin"
+}
