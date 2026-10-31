@@ -1,8 +1,11 @@
 {
   "workshop_bulletin": {
-    "sender": "EQUIPE DE COMUNICAÇÃO · FICÇÃO",
-    "briefing": "A oficina aguarda o boletim da equipe.",
-    "hint": "Ajuste até quatro barras. Então transmita.",
-    "received": "Chegou. As bancadas já estão acesas."
+	"sender": "REDAÇÃO COMUNITÁRIA · FICÇÃO",
+	"briefing": "A equipe escolheu sensores de luz para a oficina.",
+	"hint": "Sintonize o boletim revisado em 10/10.",
+	"received": "Oficina: pauta recebida. Vamos testar os sensores.",
+	"route_briefing": "Equipe: edição aprovada. Escolha um retransmissor.",
+	"route_hint": "A = alcance; R = ruído. Mínimo: 7/10.",
+	"route_received": "Oficina: versão recebida. Os sensores já estão na bancada."
   }
 }

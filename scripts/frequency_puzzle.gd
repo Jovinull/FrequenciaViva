@@ -29,10 +29,8 @@ func quality_at(frequency: float) -> float:
 
 
 func bar_count_at(frequency: float) -> int:
-	if can_transmit(frequency):
-		return 4
-	return mini(4, floori(quality_at(frequency) * 4.0 + 0.12))
+	return clampi(roundi(quality_at(frequency) * 10.0), 0, 10)
 
 
 func can_transmit(frequency: float) -> bool:
-	return absf(frequency - float(spec.target_frequency)) <= float(spec.lock_tolerance)
+	return absf(frequency - float(spec.target_frequency)) <= float(spec.lock_tolerance) + 0.0001

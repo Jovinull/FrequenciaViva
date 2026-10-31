@@ -1,0 +1,28 @@
+{
+  "id": "workshop_delivery",
+  "incoming_bars": 10,
+  "minimum_arrival_bars": 7,
+  "routes": [
+    {
+      "id": "short_busy",
+      "label": "CURTA",
+      "distance_loss": 1,
+      "interference_loss": 4,
+      "interference_note": "canal ocupado"
+    },
+    {
+      "id": "balanced_clear",
+      "label": "EQUILÍBRIO",
+      "distance_loss": 2,
+      "interference_loss": 1,
+      "interference_note": "ruído baixo"
+    },
+    {
+      "id": "long_clear",
+      "label": "LONGA",
+      "distance_loss": 4,
+      "interference_loss": 0,
+      "interference_note": "sem ruído"
+    }
+  ]
+}

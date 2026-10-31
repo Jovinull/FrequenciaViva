@@ -17,6 +17,8 @@ As referências são estudo de princípios e não fontes de assets. Nenhum perso
 
 Essas leituras são observações artísticas do material público e dos jogos, não citações de intenção dos autores.
 
+Na revisão do Marco 02, as páginas públicas foram consultadas novamente. A página oficial da PLAYISM redirecionou para um conteúdo disponível apenas em japonês; a ficha de Steam de VA-11 Hall-A foi usada como referência pública complementar. As páginas de Coffee Talk e Unpacking reforçam princípios gerais de ambientação e narrativa através de ações e objetos. As conclusões acima continuam sendo interpretação de direção, não especificação oficial dos jogos.
+
 ## Especificação visual
 
 - Resolução lógica: **480 × 270**, 16:9.
@@ -54,8 +56,22 @@ Reservar coral para falha, nunca para decoração. Manter texto relevante em cre
 
 Fontes editáveis `.aseprite` ficam fora do repositório em `C:\Workspace\FrequenciaViva-art\source`. Os PNG finais são exportados manualmente para `assets/art/`. Não usar imagens geradas por IA, geradores de sprites ou scripts para desenhar a arte final.
 
-## Revisão da vertical slice
+## Revisão visual do Marco 02 — ainda não aprovada
 
-Os três sprites finais são originais e foram desenhados à mão no LibreSprite; as formas não foram criadas por script. Na tela real, corpo, dial e medidor têm escala e contorno coerentes, e a resolução lógica preserva o pixel. O texto do visor agora ocupa uma área azul lisa e legível. O falso pico usa âmbar e o bloqueio usa turquesa.
+Revisão feita sobre a execução real no Chrome em 31/10/2026, em 480 × 270 ampliado para 960 × 540, e nas janelas de 640 × 360 e 1280 × 720. As capturas novas estão em `evidence/10-marco02-abertura.png` e `evidence/15-marco02-escolha-rota.png`. As capturas 01–09 são a referência anterior.
 
-Pendências visuais: a carcaça ainda é geométrica e pouco marcada pelo uso; o dial não tem números ou marcas de frequência próprias; faltam um fundo de oficina, pequenos objetos funcionais e movimento ambiental. A tela lisa favorece leitura, mas encobre as pequenas marcas verdes desenhadas no visor. Manter os PNGs como protótipo revisável e não declarar a direção aprovada até nova avaliação do jogo.
+Os PNGs do rádio, dial e medidor permanecem os três sprites manuais do Marco 01. Não foram redesenhados no Marco 02; a revisão solicitada da cena artesanal está pendente. O `MeterDecorMask` apenas encobre no jogo três colunas verdes estáticas que contradiziam o valor dinâmico do medidor; ele não é arte nova.
+
+### Avaliação crítica da execução atual
+
+- **Composição:** o painel foi recentrado horizontalmente para equilibrar as margens. O fundo continua uma cor azul uniforme, sem parede, janela, mesa ou segundo plano que localize a equipe; o rádio ainda parece flutuar.
+- **Carcaça:** moldura quase retangular, com áreas lisas e pouco volume. Faltam bordas com luz consistente, sombra de contato, separação de materiais, parafusos funcionais, etiqueta de manutenção e reparos cotidianos.
+- **Dial:** o anel terracota e o ponteiro são reconhecíveis, mas a escala não tem valores ou marcações de frequência legíveis. As pequenas marcas claras não estabelecem uma graduação funcional.
+- **Medidor:** os dez segmentos e a leitura numérica agora usam a mesma escala 0–10. As três barras decorativas que pareciam um segundo nível foram ocultadas. Ainda falta desenhar uma face própria para o mostrador, com hierarquia melhor entre ticks e segmentos.
+- **Tipografia:** a fonte padrão da Godot não pertence ao mundo do rádio. O texto principal está mais curto e cabe no visor ampliado; na janela de 640 × 360, os rótulos ficam pequenos. Avaliar uma fonte bitmap original ou licenciada e rever tamanho e espaçamento.
+- **Luz e animação:** âmbar e turquesa indicam estados diferentes sem bloom. A conclusão ainda é um flash breve sobre a carcaça e uma onda de linha; falta um gesto visual de transmissão com começo, percurso e chegada.
+- **Materialidade e escala:** há muito preenchimento chapado, pouco recorte de clusters e nenhuma variação ambiental. Os elementos não formam ainda a cena acolhedora e utilizada proposta na direção.
+
+### Próxima revisão de arte
+
+Voltar ao LibreSprite e refazer thumbnail, ambiente de dois planos, carcaça, dial e mostrador como um conjunto antes de adicionar enfeites. Fontes `.aseprite` continuam fora do repositório em `C:\Workspace\FrequenciaViva-art\source`. Revisar os PNGs isolados e a captura real antes de substituir os sprites. Nenhuma aprovação artística está registrada; a direção permanece uma hipótese.

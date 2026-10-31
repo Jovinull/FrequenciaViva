@@ -4,7 +4,7 @@ Puzzle narrativo curto sobre sintonia, circulação de mensagens e protagonismo 
 
 ## Estado
 
-Marco 01: fatia vertical jogável. Contém uma estação, um puzzle determinístico com pico falso, transmissão, resposta curta e reinício. A arte continua candidata a revisão; não é uma aprovação final.
+Marco 02: fatia jogável com tutorial de sintonia, pico falso, puzzle determinístico de rota, transmissão e resposta da oficina. A arte continua em revisão; não está aprovada.
 
 ## Executar
 
@@ -12,6 +12,12 @@ Requer Godot 4.7.2 ou compatível. Abra `project.godot` no editor e pressione F6
 
 ```powershell
 godot --path .
+```
+
+Para rodar os testes de lógica:
+
+```powershell
+godot --headless --path . --script tests/run_tests.gd
 ```
 
 O projeto usa GDScript, renderer Compatibility, resolução lógica 480×270, filtro nearest e não depende de plugins.
@@ -31,11 +37,15 @@ Abra `http://127.0.0.1:8000/` no navegador. As capturas da build executada e tes
 
 - Arraste o dial horizontalmente ou use a roda do mouse para sintonizar.
 - Também é possível usar as setas esquerda/direita.
-- Ajuste até o estado **SINAL ESTÁVEL** e clique em **TRANSMITIR**.
-- Depois da mensagem chegar, use **SINTONIZAR DE NOVO** para recomeçar.
+- Ajuste até **10/10** e clique em **TRANSMITIR**. O pico âmbar em 7/10 é falso.
+- Depois da confirmação, escolha um retransmissor. Compare perda de alcance (A) e ruído (R); a rota deve chegar com pelo menos 7/10.
+- Em roteamento, use os botões, teclas `1`, `2`, `3` ou `Enter` após escolher. No fim, reinicie o turno.
 
 ## Capturas reais
 
+- [Abertura do Marco 02](evidence/10-marco02-abertura.png) · [pico falso](evidence/11-marco02-pico-falso.png) · [falha de sintonia](evidence/12-marco02-erro-de-sintonia.png)
+- [Seleção de rota](evidence/15-marco02-escolha-rota.png) · [rota fraca](evidence/16-marco02-rota-fraca.png) · [rota equilibrada](evidence/18-marco02-rota-clara.png) · [entrega](evidence/19-marco02-entrega.png)
+- [Tela nativa 480 × 270](evidence/23-marco02-native-480x270.png) · [janela 640 × 360](evidence/21-marco02-janela-640x360.png) · [janela 1280 × 720](evidence/22-marco02-janela-1280x720.png)
 - [Abertura](evidence/01-opening.png)
 - [Pico falso](evidence/02-false-peak.png)
 - [Sinal estável](evidence/04-locked.png)
@@ -50,9 +60,10 @@ Abra `http://127.0.0.1:8000/` no navegador. As capturas da build executada e tes
 - `assets/audio/`: efeitos sonoros originais do protótipo.
 - `docs/`: decisões artísticas, GDD, pesquisa, regras consultadas, créditos e pendências.
 - `evidence/`: capturas da versão realmente executada.
+- `tests/`: testes automatizados da lógica de sintonia, roteamento e campanha.
 
 ## Fontes e produção
 
-O fonte de arte `.aseprite` está fora do repositório em `C:\Workspace\FrequenciaViva-art\source`. A ilustração é desenhada manualmente em LibreSprite; nenhum gerador de imagem ou modelo de sprite foi usado. Consulte [créditos](docs/credits.md), [direção artística](docs/direcao-artistica.md), [pesquisa cultural](docs/pesquisa-cultural.md) e [GDD](docs/gdd.md).
+Os fontes de arte `.aseprite` ficam fora do repositório em `C:\Workspace\FrequenciaViva-art\source`. Os sprites atuais foram desenhados manualmente em LibreSprite no Marco 01; o redesenho artístico previsto para o Marco 02 permanece pendente. Nenhum gerador de imagem ou modelo de sprite foi usado. Consulte [créditos](docs/credits.md), [direção artística](docs/direcao-artistica.md), [pesquisa cultural](docs/pesquisa-cultural.md) e [GDD](docs/gdd.md).
 
 Ferramentas de assistência de IA foram usadas no planejamento, pesquisa, documentação e implementação de código. A arte raster final foi desenhada manualmente. A narrativa provisória é assistida por IA e ainda precisa de revisão editorial e consulta cultural qualificada antes de ser considerada definitiva. O regulamento oficial ligado pela organização está em uma pasta do Drive que não exibiu os arquivos sem login; não foi encontrada cópia no workspace. A equipe responsável pela inscrição deve confirmar com a organização como declarar assistência de IA.

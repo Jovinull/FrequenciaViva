@@ -1,6 +1,7 @@
 extends Control
 
 const PUZZLE_SPEC_PATH := "res://data/pilot_puzzle.json"
+const ROUTES_SPEC_PATH := "res://data/pilot_routes.json"
 const MESSAGE_PATH := "res://data/radio_messages.json"
 const COLOR_CREAM := Color("#F3DBA5")
 const COLOR_MUTED := Color("#A5B4A6")
@@ -20,63 +21,90 @@ const COLOR_UNLIT := Color("#3F3F74")
 @onready var wave_line: SignalWave = $SignalWave
 
 var _puzzle: FrequencyPuzzle
+var _route_puzzle: SignalRoutePuzzle
 var _campaign := CampaignState.new()
 var _message: Dictionary
 var _signal_lights: Array[ColorRect] = []
+var _route_buttons: Dictionary = {}
+var _selected_route_id := ""
 var _last_bar_count := -1
 var _last_quality := -1.0
 var _shown_lock := false
-var _button_last_played := 0.0
+var _last_click_time := 0.0
 var _attempt_feedback := false
 
 
 func _ready() -> void:
 	var puzzle_spec: Dictionary = _load_json(PUZZLE_SPEC_PATH)
+	var routes_spec: Dictionary = _load_json(ROUTES_SPEC_PATH)
 	var all_messages: Dictionary = _load_json(MESSAGE_PATH)
 	_puzzle = FrequencyPuzzle.new(puzzle_spec)
+	_route_puzzle = SignalRoutePuzzle.new(routes_spec)
 	_message = all_messages.get(str(puzzle_spec.get("message_id", "workshop_bulletin")), {})
 
-	var lights := $SignalLights
-	for child in lights.get_children():
+	for child in $SignalLights.get_children():
 		if child is ColorRect:
 			_signal_lights.append(child)
+
+	_route_buttons = {
+		"short_busy": $RouteShortButton,
+		"balanced_clear": $RouteBalancedButton,
+		"long_clear": $RouteLongButton,
+	}
+	var route_group := ButtonGroup.new()
+	for route_id: String in _route_buttons:
+		var route_button: Button = _route_buttons[route_id]
+		route_button.toggle_mode = true
+		route_button.button_group = route_group
+		route_button.pressed.connect(_select_route.bind(route_id))
+		_style_button(route_button)
+		route_button.add_theme_font_size_override("font_size", 8)
+		route_button.add_theme_color_override("font_color", COLOR_CREAM)
+		route_button.add_theme_color_override("font_hover_color", Color.WHITE)
+		route_button.add_theme_color_override("font_pressed_color", Color("#161F2A"))
+		var route: Dictionary = _route_puzzle.route_by_id(route_id)
+		route_button.text = "%s   A%d + R%d" % [
+			str(route.get("label", "ROTA")),
+			int(route.get("distance_loss", 0)),
+			int(route.get("interference_loss", 0)),
+		]
 
 	dial.minimum_frequency = float(puzzle_spec.frequency_min)
 	dial.maximum_frequency = float(puzzle_spec.frequency_max)
 	dial.step = float(puzzle_spec.frequency_step)
 	dial.frequency_changed.connect(_on_frequency_changed)
 	transmit_button.pressed.connect(_on_transmit_pressed)
+	_style_button(transmit_button)
 	transmit_button.add_theme_font_size_override("font_size", 9)
-	transmit_button.add_theme_color_override("font_color", Color("#F3DBA5"))
+	transmit_button.add_theme_color_override("font_color", COLOR_CREAM)
 	transmit_button.add_theme_color_override("font_hover_color", Color("#FFF0C6"))
 	transmit_button.add_theme_color_override("font_pressed_color", Color("#161F2A"))
-	transmit_button.add_theme_stylebox_override("normal", _button_style(Color("#36525A"), Color("#66766A")))
-	transmit_button.add_theme_stylebox_override("hover", _button_style(Color("#52675B"), Color("#E2B36B")))
-	transmit_button.add_theme_stylebox_override("pressed", _button_style(Color("#E2B36B"), Color("#F3DBA5")))
-	transmit_button.add_theme_stylebox_override("disabled", _button_style(Color("#263640"), Color("#52675B")))
 
 	$TitleLabel.add_theme_font_size_override("font_size", 15)
 	$TitleLabel.add_theme_color_override("font_color", COLOR_CREAM)
 	status_label.add_theme_font_size_override("font_size", 10)
 	status_label.add_theme_color_override("font_color", COLOR_MUTED)
 	frequency_label.add_theme_font_size_override("font_size", 12)
-	frequency_label.add_theme_color_override("font_color", Color("#E2B36B"))
-	message_label.add_theme_font_size_override("font_size", 10)
+	frequency_label.add_theme_color_override("font_color", COLOR_AMBER)
+	message_label.add_theme_font_size_override("font_size", 9)
 	message_label.add_theme_color_override("font_color", COLOR_CREAM)
 	hint_label.add_theme_font_size_override("font_size", 8)
 	hint_label.add_theme_color_override("font_color", COLOR_MUTED)
 	meter_label.add_theme_font_size_override("font_size", 8)
 	meter_label.add_theme_color_override("font_color", COLOR_CREAM)
 	$FictionLabel.add_theme_font_size_override("font_size", 7)
-	$FictionLabel.add_theme_color_override("font_color", Color("#A5B4A6"))
+	$FictionLabel.add_theme_color_override("font_color", COLOR_MUTED)
+
+	for route_button: Button in _route_buttons.values():
+		route_button.visible = false
 
 	dial.set_frequency(float(puzzle_spec.starting_frequency), false)
 	dial.grab_focus()
 	_campaign.begin()
-	message_label.text = str(_message.get("briefing", "A equipe preparou um boletim. Procure o sinal mais forte."))
-	hint_label.text = str(_message.get("hint", "Ajuste até quatro barras. Então transmita."))
+	message_label.text = str(_message.get("briefing", "A equipe preparou um boletim."))
+	hint_label.text = str(_message.get("hint", "Sintonize até 10/10."))
 	frequency_label.text = _format_frequency(dial.frequency)
-	status_label.text = "ESTAÇÃO 01   ·   SINTONIZANDO"
+	status_label.text = "EQUIPE DE COMUNICAÇÃO INDÍGENA   ·   BUSCANDO SINAL"
 	transmit_button.text = "TRANSMITIR"
 	_update_signal_readout()
 
@@ -90,6 +118,13 @@ func _load_json(path: String) -> Dictionary:
 		push_error("JSON inválido: " + path)
 		return {}
 	return parsed
+
+
+func _style_button(button: Button) -> void:
+	button.add_theme_stylebox_override("normal", _button_style(Color("#36525A"), Color("#66766A")))
+	button.add_theme_stylebox_override("hover", _button_style(Color("#52675B"), COLOR_AMBER))
+	button.add_theme_stylebox_override("pressed", _button_style(COLOR_AMBER, COLOR_CREAM))
+	button.add_theme_stylebox_override("disabled", _button_style(Color("#263640"), Color("#52675B")))
 
 
 func _button_style(fill: Color, border: Color) -> StyleBoxFlat:
@@ -106,15 +141,11 @@ func _format_frequency(value: float) -> String:
 
 
 func _on_frequency_changed(value: float) -> void:
-	if _campaign.phase == CampaignState.Phase.TRANSMITTING or _campaign.phase == CampaignState.Phase.RECEIVED:
+	if _campaign.phase == CampaignState.Phase.TRANSMITTING or _campaign.phase == CampaignState.Phase.RECEIVED or _campaign.phase == CampaignState.Phase.ROUTING:
 		return
 	if _attempt_feedback:
-		message_label.text = str(_message.get("briefing", "A equipe preparou um boletim. Procure o sinal mais forte."))
+		message_label.text = str(_message.get("briefing", "A equipe preparou um boletim."))
 		_attempt_feedback = false
-	if _campaign.phase == CampaignState.Phase.BRIEFING:
-		_campaign.begin()
-		transmit_button.text = "TRANSMITIR"
-		status_label.text = "ESTAÇÃO 01   ·   BUSCANDO SINAL"
 	frequency_label.text = _format_frequency(value)
 	var quality := _puzzle.quality_at(value)
 	var bars := _puzzle.bar_count_at(value)
@@ -122,97 +153,197 @@ func _on_frequency_changed(value: float) -> void:
 		audio.play_tuning_hiss()
 	if bars != _last_bar_count or absf(quality - _last_quality) > 0.07:
 		var now := Time.get_ticks_msec() / 1000.0
-		if now - _button_last_played >= 0.07:
+		if now - _last_click_time >= 0.07:
 			audio.play_dial_click()
-			_button_last_played = now
+			_last_click_time = now
 	_last_bar_count = bars
 	_last_quality = quality
 	_update_signal_readout()
 	var locked := _puzzle.can_transmit(value)
 	if locked and not _shown_lock:
 		audio.play_signal_lock()
-		status_label.text = "SINAL ESTÁVEL   ·   PRONTO PARA ENVIAR"
+		status_label.text = "SINAL ESTÁVEL   ·   VERSÃO PRONTA"
 	elif not locked:
-		status_label.text = "ESTAÇÃO 01   ·   BUSCANDO SINAL"
+		status_label.text = "EQUIPE DE COMUNICAÇÃO INDÍGENA   ·   BUSCANDO SINAL"
 	_shown_lock = locked
 
 
 func _update_signal_readout() -> void:
 	if _signal_lights.is_empty() or _puzzle == null:
 		return
-	var quality := _puzzle.quality_at(dial.frequency)
-	var bars := _puzzle.bar_count_at(dial.frequency)
-	var active_segments := clampi(roundi(quality * float(_signal_lights.size())), 0, _signal_lights.size())
+	var bars := 0
 	var active_color := COLOR_CORAL
-	if quality >= 0.5:
-		active_color = COLOR_AMBER
-	if _puzzle.can_transmit(dial.frequency):
+	if _campaign.phase == CampaignState.Phase.ROUTING:
+		if _selected_route_id.is_empty():
+			bars = int(_route_puzzle.spec.get("incoming_bars", 10))
+			active_color = COLOR_MUTED
+			meter_label.text = "FONTE   %d / 10" % bars
+		else:
+			bars = _route_puzzle.remaining_bars(_selected_route_id)
+			active_color = COLOR_TURQUOISE if _route_puzzle.can_transmit(_selected_route_id) else COLOR_CORAL
+			meter_label.text = "CHEGADA   %d / 10" % bars
+	elif _campaign.phase == CampaignState.Phase.TRANSMITTING:
+		if _campaign.stage == CampaignState.Stage.ROUTING and not _selected_route_id.is_empty():
+			bars = _route_puzzle.remaining_bars(_selected_route_id)
+		else:
+			bars = _puzzle.bar_count_at(dial.frequency)
 		active_color = COLOR_TURQUOISE
+		meter_label.text = "TRANSMITINDO"
+	elif _campaign.phase == CampaignState.Phase.RECEIVED and _campaign.stage == CampaignState.Stage.ROUTING:
+		bars = _route_puzzle.remaining_bars(_selected_route_id) if not _selected_route_id.is_empty() else 10
+		active_color = COLOR_TURQUOISE
+		meter_label.text = "BOLETIM ENTREGUE"
+	else:
+		bars = _puzzle.bar_count_at(dial.frequency)
+		active_color = COLOR_TURQUOISE if _puzzle.can_transmit(dial.frequency) else (COLOR_AMBER if bars >= 5 else COLOR_CORAL)
+		if _campaign.phase == CampaignState.Phase.RECEIVED:
+			meter_label.text = "BOLETIM CONFIRMADO"
+		else:
+			meter_label.text = "SINAL   %d / 10" % bars
+
 	for index in range(_signal_lights.size()):
 		var light := _signal_lights[index]
-		light.color = active_color if index < active_segments else COLOR_UNLIT
-		light.visible = index < active_segments
+		light.color = active_color if index < bars else COLOR_UNLIT
+		light.visible = index < bars
 
-	if _campaign.phase == CampaignState.Phase.RECEIVED:
-		meter_label.text = "MENSAGEM RECEBIDA"
-	elif _puzzle.can_transmit(dial.frequency):
-		meter_label.text = "SINAL ESTÁVEL"
+
+func _select_route(route_id: String) -> void:
+	if _campaign.phase != CampaignState.Phase.ROUTING:
+		return
+	_selected_route_id = route_id
+	(_route_buttons[route_id] as Button).button_pressed = true
+	audio.play_dial_click()
+	var route: Dictionary = _route_puzzle.route_by_id(route_id)
+	var bars := _route_puzzle.remaining_bars(route_id)
+	if _route_puzzle.can_transmit(route_id):
+		audio.play_signal_lock()
+		status_label.text = "ROTA ESTÁVEL   ·   %d / 10 NA OFICINA" % bars
+		message_label.text = "Sinal previsto: %d/10. A equipe pode enviar esta versão." % bars
 	else:
-		meter_label.text = "SINAL   %d / 4" % bars
+		status_label.text = "ROTA FRACA   ·   %d / 10 NA OFICINA" % bars
+		message_label.text = "A rota perde %d por distância e %d por ruído." % [
+			int(route.get("distance_loss", 0)),
+			int(route.get("interference_loss", 0)),
+		]
+	_update_signal_readout()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if _campaign.phase != CampaignState.Phase.ROUTING:
+		return
+	match event.keycode:
+		KEY_1: _select_route("short_busy")
+		KEY_2: _select_route("balanced_clear")
+		KEY_3: _select_route("long_clear")
 
 
 func _on_transmit_pressed() -> void:
 	match _campaign.phase:
-		CampaignState.Phase.BRIEFING:
-			_campaign.begin()
-			status_label.text = "ESTAÇÃO 01   ·   BUSCANDO SINAL"
-			transmit_button.text = "TRANSMITIR"
-			message_label.text = "O boletim está pronto. A oficina aguarda a chamada da equipe."
-			return
 		CampaignState.Phase.TUNING:
 			_campaign.record_transmission_attempt()
 			if not _puzzle.can_transmit(dial.frequency):
 				_attempt_feedback = true
-				status_label.text = "AINDA NÃO   ·   PROCURE O PICO MAIS FORTE"
-				message_label.text = "O sinal veio cortado. Tente de novo."
+				status_label.text = "AINDA NÃO   ·   ENCONTRE O PICO ESTÁVEL"
+				message_label.text = "Sinal incompleto. Ajuste mais perto do centro."
 				dial.grab_focus()
 				return
-			if not _campaign.begin_successful_transmission():
-				return
-			transmit_button.disabled = true
-			transmit_button.text = "ENVIANDO..."
-			hint_label.visible = false
-			meter_label.text = "TRANSMITINDO"
-			status_label.text = "PORTADORA CONFIRMADA   ·   ENVIANDO BOLETIM"
-			audio.play_transmission_complete()
-			wave_line.play()
-			var flash := create_tween()
-			flash.tween_property($RadioBody, "modulate", Color(1.0, 1.14, 1.06), 0.12)
-			flash.tween_property($RadioBody, "modulate", Color.WHITE, 0.35)
-			await get_tree().create_timer(0.62).timeout
-			_campaign.receive_message()
-			status_label.text = "MENSAGEM RECEBIDA   ·   ESTAÇÃO 01"
-			message_label.text = str(_message.get("received", "A mensagem chegou ao destino."))
-			meter_label.text = "MENSAGEM RECEBIDA"
-			transmit_button.disabled = false
-			transmit_button.text = "SINTONIZAR DE NOVO"
-			_update_signal_readout()
-		CampaignState.Phase.TRANSMITTING, CampaignState.Phase.RECEIVED:
-			if _campaign.phase == CampaignState.Phase.RECEIVED:
+			await _transmit(false)
+		CampaignState.Phase.RECEIVED:
+			if _campaign.stage == CampaignState.Stage.TUNING:
+				if _campaign.open_route_puzzle():
+					_open_route_puzzle()
+			else:
 				_restart()
+		CampaignState.Phase.ROUTING:
+			_campaign.record_transmission_attempt()
+			if _selected_route_id.is_empty():
+				status_label.text = "ESCOLHA UM RETRANSMISSOR"
+				message_label.text = "Compare perda por distância e interferência."
+				return
+			if not _route_puzzle.can_transmit(_selected_route_id):
+				status_label.text = "VERSÃO NÃO ENVIADA   ·   SINAL ABAIXO DE 7 / 10"
+				return
+			await _transmit(true)
+
+
+func _transmit(is_final_delivery: bool) -> void:
+	if not _campaign.begin_successful_transmission():
+		return
+	transmit_button.disabled = true
+	for route_button: Button in _route_buttons.values():
+		route_button.disabled = true
+	if is_final_delivery:
+		transmit_button.text = "ENVIANDO VERSÃO FINAL..."
+		status_label.text = "PORTADORA CONFIRMADA   ·   ENVIANDO À OFICINA"
+	else:
+		transmit_button.text = "ENVIANDO BOLETIM..."
+		status_label.text = "PORTADORA CONFIRMADA   ·   ENVIANDO A VERSÃO REVISADA"
+	hint_label.visible = false
+	meter_label.text = "TRANSMITINDO"
+	audio.play_transmission_complete()
+	wave_line.play()
+	var flash := create_tween()
+	flash.tween_property($RadioBody, "modulate", Color(1.0, 1.14, 1.06), 0.12)
+	flash.tween_property($RadioBody, "modulate", Color.WHITE, 0.35)
+	await get_tree().create_timer(0.72).timeout
+	_campaign.receive_message()
+	transmit_button.disabled = false
+	hint_label.visible = true
+	if is_final_delivery:
+		status_label.text = "EQUIPE DE COMUNICAÇÃO INDÍGENA   ·   ENTREGA CONFIRMADA"
+		message_label.text = str(_message.get("route_received", "A versão final chegou ao destino."))
+		hint_label.text = "A equipe escolhe o próximo boletim."
+		transmit_button.text = "RECOMEÇAR TURNO"
+		_update_signal_readout()
+	else:
+		status_label.text = "OFICINA   ·   PAUTA RECEBIDA"
+		message_label.text = str(_message.get("received", "A oficina recebeu a pauta."))
+		hint_label.text = "Próximo passo: escolher por onde enviar a versão final."
+		transmit_button.text = "ESCOLHER ROTA"
+		_update_signal_readout()
+		$RadioBody.modulate = Color.WHITE
+		return
+	for route_button: Button in _route_buttons.values():
+		route_button.disabled = false
+
+
+func _open_route_puzzle() -> void:
+	_selected_route_id = ""
+	dial.visible = false
+	frequency_label.text = "FONTE   ·   10 / 10"
+	status_label.text = "ESCOLHA UM RETRANSMISSOR   ·   TECLAS 1, 2, 3"
+	message_label.text = str(_message.get("route_briefing", "Escolha uma rota para a oficina."))
+	hint_label.text = str(_message.get("route_hint", "A rota precisa chegar com 7/10."))
+	hint_label.visible = true
+	for route_button: Button in _route_buttons.values():
+		route_button.visible = true
+		route_button.button_pressed = false
+		route_button.disabled = false
+	transmit_button.text = "ENVIAR VERSÃO FINAL"
+	transmit_button.disabled = false
+	_update_signal_readout()
+	_route_buttons["balanced_clear"].grab_focus()
 
 
 func _restart() -> void:
 	_campaign.restart()
-	hint_label.visible = true
-	hint_label.text = str(_message.get("hint", "Ajuste até quatro barras. Então transmita."))
-	message_label.text = str(_message.get("briefing", "A equipe preparou um boletim. Procure o sinal mais forte."))
-	status_label.text = "ESTAÇÃO 01   ·   SINTONIZANDO"
-	transmit_button.text = "TRANSMITIR"
+	_selected_route_id = ""
+	dial.visible = true
 	dial.set_frequency(float(_puzzle.spec.starting_frequency), false)
 	dial.grab_focus()
-	_campaign.begin()
 	frequency_label.text = _format_frequency(dial.frequency)
+	hint_label.visible = true
+	hint_label.text = str(_message.get("hint", "Sintonize até 10/10."))
+	message_label.text = str(_message.get("briefing", "A equipe preparou um boletim."))
+	status_label.text = "EQUIPE DE COMUNICAÇÃO INDÍGENA   ·   BUSCANDO SINAL"
+	transmit_button.text = "TRANSMITIR"
+	transmit_button.disabled = false
+	for route_button: Button in _route_buttons.values():
+		route_button.visible = false
+		route_button.button_pressed = false
+		route_button.disabled = false
 	_last_bar_count = -1
 	_last_quality = -1.0
 	_shown_lock = false
